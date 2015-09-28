@@ -1,0 +1,40 @@
+.slides .avatar {
+  border-radius: 10px;
+}
+
+.slides .arrow {
+  width: 50%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.slides .tuple {
+  padding: 10px;
+  border: 2px solid whitesmoke;
+  background-color: cornflowerblue;
+  color: antiquewhite;
+  display: inline-block;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 30px;
+}
+
+.slides .tuple::after {
+  content: "tuple";
+}
+
+.slides .spout {
+  height: 110%;
+  padding: 10px;
+  border: 4px solid burlywood;
+  background-color: cadetblue;
+  color: antiquewhite;
+  display: inline-block;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 30px;
+}
+
+.slides .spout::after {
+  content: "spout";
+}

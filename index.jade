@@ -1,0 +1,159 @@
+html
+  head
+    link(rel='stylesheet', href='bower_components/reveal.js/css/reveal.css')
+    link(rel='stylesheet', href='bower_components/reveal.js/css/theme/beige.css')
+    link(rel='stylesheet', href='bower_components/reveal.js/lib/css/zenburn.css')
+    link(rel='stylesheet', href='bower_components/font-awesome/css/font-awesome.css')
+    link(rel='stylesheet', href='styles/index.css')
+  body
+    .reveal
+      .slides
+        section
+          h1 Real-time data analysis at scale
+        section
+          img.avatar(src='http://www.gravatar.com/avatar/e64a6fdad3b10abef158134cef18d1ec?s=200')
+          p
+            strong Vlad Știrbu
+          p Principal Engineer, Cloud Software, Nokia Technologies
+          p
+            i.fa.fa-twitter  VladStirbu
+          p
+            i.fa.fa-github  vstirbu
+        section
+          section
+            h1 Batch vs Real-time Data Processing
+            h2 (shallow dive)
+          section
+            h2 Batch
+            pre
+              code.
+                var data = 'the quick brown fox';
+                
+                var wc = data.split(' ').reduce(function (result, value) {
+                  if (result[value]) {
+                    result[value]++;
+                  } else {
+                    result[value] = 1;
+                  }
+                  
+                  return result;
+                }, {});
+                
+                console.log(wc);
+          section
+            h2 Realtime
+            pre
+              code.
+                var result = {};
+  
+                process.stdin.resume();
+                process.stdin.setEncoding('utf8');
+  
+                process.stdin.on('data', function (data) {
+                  if (result[data]) {
+                    result[data]++;
+                  } else {
+                    result[data] = 1;
+                  }
+    
+                  console.log(result);
+                }); 
+          section
+            h2 Going large concerns
+            ul
+              li Scaling is painful
+              li Poor fault-tolerance
+              li Coding is tedious
+        section
+          section
+            h2 Lambda architecture
+            img.stretch(src='http://lambda-architecture.net/img/la-overview_small.png')
+            p.footer http://lambda-architecture.net
+          section
+            h2 What we want from the speed layer
+            ul
+              li Guaranteed data processing
+              li Horizontal scalability
+              li Fault-tolerance
+              li No intermediate message brokers
+              li Higher level abstraction than message passing
+        section
+          section
+            h1 Apache Storm
+          section
+            h2 Project background
+            ul
+              li Developed by Backtype and Tweeter
+              li Open source 2013
+              li Apache Software Foundation
+            img(src='images/companies.png')
+        section
+          h2 Apache cluster components
+          img.stretch(src='images/storm-cluster.png')
+        section
+          section
+            h2 Concepts
+            p Streams
+            p Spouts
+            p Bolts
+            p Topologies
+          section
+            h2 What is a stream?
+            p an unbounded sequence of tuples
+            p
+              span.tuple
+              span.tuple
+              span.tuple
+              span.tuple
+          section
+            h2 What is a spout?
+            p a source of streams
+            p
+              span.spout
+              span.tuple
+              span.tuple
+              span.tuple
+          section
+            h2 Spouts
+            p reading from streaming APIs
+            p reading from message queues
+            p reading from databases
+          section
+            h2 What is a bolt?
+            p processes input streams
+            p produces new streams
+          section
+            h2 Bolts
+            p functions
+            p filters
+            p aggregation
+            p joins
+            p interactions to databases
+          section 
+            h2 What is a topology?
+            p a network of spouts and bolts
+          section
+            h2 Tasks
+            p spouts and bolts execute tasks across the clusters
+          section 
+            h2 Grouping streams
+            p shuffle - pick a random tasks
+            p fields - hasing on a subset of tuple fields
+            p global - task with lowest id
+            p all - send to all
+        section
+          section
+            h1 Storm APIs
+            h2 (get hands dirty)
+          section
+            h2 Creating Bolts
+            pre
+              code.
+          section
+            h2 Creating Topologies
+          section
+        
+    script(src='bower_components/reveal.js/lib/js/head.min.js')
+    script(src='bower_components/reveal.js/js/reveal.js')
+    script(src='scripts/index.js')
+
