@@ -16,7 +16,7 @@ html
             strong Vlad Știrbu
           p Principal Engineer, Cloud Software, Nokia Technologies
           p
-            i.fa.fa-twitter  VladStirbu
+            i.fa.fa-twitter  @VladStirbu
           p
             i.fa.fa-github  vstirbu
         section
@@ -65,7 +65,7 @@ html
               li Poor fault-tolerance
               li Coding is tedious
         section
-          section
+          section(data-background="http://lambda-architecture.net/img/la-overview_small.png")
             h2 Lambda architecture
             img.stretch(src='http://lambda-architecture.net/img/la-overview_small.png')
             p.footer http://lambda-architecture.net
@@ -80,16 +80,16 @@ html
         section
           section
             h1 Apache Storm
-          section
+          section(data-background='images/companies.png')
             h2 Project background
             ul
               li Developed by Backtype and Tweeter
               li Open source 2013
               li Apache Software Foundation
             img(src='images/companies.png')
-        section
+        section(data-background="images/storm-cluster.png")
           h2 Apache cluster components
-          img.stretch(src='images/storm-cluster.png')
+          img(src='images/storm-cluster.png')
         section
           section
             h2 Concepts
@@ -122,6 +122,11 @@ html
             h2 What is a bolt?
             p processes input streams
             p produces new streams
+            p
+              span.tuple
+              span.bolt
+              span.tuple
+              span.tuple
           section
             h2 Bolts
             p functions
@@ -131,9 +136,11 @@ html
             p interactions to databases
           section 
             h2 What is a topology?
+            img.stretch(src="https://storm.apache.org/documentation/images/topology.png")
             p a network of spouts and bolts
           section
             h2 Tasks
+            img.stretch(src="https://storm.apache.org/documentation/images/topology-tasks.png")
             p spouts and bolts execute tasks across the clusters
           section 
             h2 Grouping streams
@@ -146,12 +153,81 @@ html
             h1 Storm APIs
             h2 (get hands dirty)
           section
-            h2 Creating Bolts
+            h2 Creating bolts
+            pre
+              code.no-max-height.
+                public class MyBolt extends BaseRichBolt {
+                  private OutputCollectorBase _collector;
+              
+                  @Override
+                  public void prepare(Map conf, TopologyContext context, OutputCollectorBase collector) {
+                    _collector = collector;
+                  }
+              
+                  @Override
+                  public void execute(Tuple input) {
+                    _collector.emit(input, new Values(input.getInteger(0)));
+                    _collector.ack(input);
+                  }
+              
+                  @Override
+                  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+                    declarer.declare(new Fields("newField"));
+                  }    
+                }
+          section
+            h2 Creating spouts
+            pre
+              code.stretch.
+                public class RandomSentenceSpout extends BaseRichSpout {
+                  SpoutOutputCollector _collector;
+                  Random _rand;
+                
+                  @Override
+                  public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+                    _collector = collector;
+                    _rand = new Random();
+                  }
+                
+                  @Override
+                  public void nextTuple() {
+                    Utils.sleep(100);
+                    String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
+                        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
+                    String sentence = sentences[_rand.nextInt(sentences.length)];
+                    _collector.emit(new Values(sentence));
+                  }
+                
+                  @Override
+                  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+                    declarer.declare(new Fields("word"));
+                  }
+                }
+          section
+            h2 Creating topologies
             pre
               code.
+                TopologyBuilder builder = new TopologyBuilder();
+                
+                builder.setSpout("sentences", new RandomSentenceSpout(), 5);
+                
+                builder.setBolt("split", new SplitSentence(), 8)
+                        .shuffleGrouping("sentences");
+                        
+                builder.setBolt("count", new WordCount(), 12)
+                        .fieldsGrouping("split", new Fields("word"));
           section
-            h2 Creating Topologies
-          section
+            h2 Multi-language support
+            p JavaScript
+            p Python
+            p Ruby
+        section
+          h1 Lets see running code
+          h2 (Word Count)
+        section
+          h2 Resources
+          p https://storm.apache.org
+          p https://github.com/vstirbu/storm-intro
         
     script(src='bower_components/reveal.js/lib/js/head.min.js')
     script(src='bower_components/reveal.js/js/reveal.js')
