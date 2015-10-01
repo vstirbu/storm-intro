@@ -218,18 +218,55 @@ html
                         .fieldsGrouping("split", new Fields("word"));
           section
             h2 Multi-language support
-            p JavaScript
-            p Python
-            p Ruby
+            p JavaScript, Python, Ruby
+            pre
+              code.
+                public static class SplitSentence extends ShellBolt implements IRichBolt {
+              
+                  public SplitSentence() {
+                    super("node", "splitsentence.js");
+                  }
+              
+                  @Override
+                  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+                    declarer.declare(new Fields("word"));
+                  }
+                }
+        section
+          section
+            h1 Storm Deployment
+          section
+            h2 Build
+            pre
+              code.
+                $ mvn package
+                $ ls target
+                
+                storm-starter-*.jar
+            p use storm-starter
+          section
+            h2 Local/development Cluster
+            pre
+              code.
+                $ storm jar all-my-code.jar MyTopology arg1 arg2
+          section
+            h2 Production Cluster
+            pre
+              code.
+                $ storm jar all-my-code.jar MyTopology topology-name remote
         section
           h1 Lets see running code
           h2 (Word Count)
         section
-          h2 Resources
+          h3 Resources
           p https://storm.apache.org
+          p https://github.com/apache/storm/tree/master/examples/storm-starter
+          p stack overflow
+          h3 Slides
           p https://github.com/vstirbu/storm-intro
         
     script(src='bower_components/reveal.js/lib/js/head.min.js')
     script(src='bower_components/reveal.js/js/reveal.js')
     script(src='scripts/index.js')
+    script(src='scripts/ga.js')
 
