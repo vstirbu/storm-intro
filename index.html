@@ -1,0 +1,88 @@
+<html><head><link rel="stylesheet" href="bower_components/reveal.js/css/reveal.css"/><link rel="stylesheet" href="bower_components/reveal.js/css/theme/beige.css"/><link rel="stylesheet" href="bower_components/reveal.js/lib/css/zenburn.css"/><link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.css"/><link rel="stylesheet" href="styles/index.css"/></head><body><div class="reveal"><div class="slides"><section><h1>Real-time data analysis at scale</h1></section><section><img src="http://www.gravatar.com/avatar/e64a6fdad3b10abef158134cef18d1ec?s=200" class="avatar"/><p><strong>Vlad Știrbu</strong></p><p>Principal Engineer, Cloud Software, Nokia Technologies</p><p><i class="fa fa-twitter"> @VladStirbu</i></p><p><i class="fa fa-github"> vstirbu</i></p></section><section><section><h1>Batch vs Real-time Data Processing</h1><h2>(shallow dive)</h2></section><section><h2>Batch</h2><pre><code>var data = 'the quick brown fox';
+
+var wc = data.split(' ').reduce(function (result, value) {
+  if (result[value]) {
+    result[value]++;
+  } else {
+    result[value] = 1;
+  }
+  
+  return result;
+}, {});
+
+console.log(wc);</code></pre></section><section><h2>Realtime</h2><pre><code>var result = {};
+
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', function (data) {
+  if (result[data]) {
+    result[data]++;
+  } else {
+    result[data] = 1;
+  }
+  
+  console.log(result);
+}); </code></pre></section><section><h2>Going large concerns</h2><ul><li>Scaling is painful</li><li>Poor fault-tolerance</li><li>Coding is tedious</li></ul></section></section><section><section data-background="http://lambda-architecture.net/img/la-overview_small.png"><h2>Lambda architecture</h2><img src="http://lambda-architecture.net/img/la-overview_small.png" class="stretch"/><p class="footer">http://lambda-architecture.net</p></section><section><h2>What we want from the speed layer</h2><ul><li>Guaranteed data processing</li><li>Horizontal scalability</li><li>Fault-tolerance</li><li>No intermediate message brokers</li><li>Higher level abstraction than message passing</li></ul></section></section><section><section><h1>Apache Storm</h1></section><section data-background="images/companies.png"><h2>Project background</h2><ul><li>Developed by Backtype and Tweeter</li><li>Open source 2013</li><li>Apache Software Foundation</li></ul><img src="images/companies.png"/></section></section><section data-background="images/storm-cluster.png"><h2>Apache cluster components</h2><img src="images/storm-cluster.png"/></section><section><section><h2>Concepts</h2><p>Streams</p><p>Spouts</p><p>Bolts</p><p>Topologies</p></section><section><h2>What is a stream?</h2><p>an unbounded sequence of tuples</p><p><span class="tuple"></span><span class="tuple"></span><span class="tuple"></span><span class="tuple"></span></p></section><section><h2>What is a spout?</h2><p>a source of streams</p><p><span class="spout"></span><span class="tuple"></span><span class="tuple"></span><span class="tuple"></span></p></section><section><h2>Spouts</h2><p>reading from streaming APIs</p><p>reading from message queues</p><p>reading from databases</p></section><section><h2>What is a bolt?</h2><p>processes input streams</p><p>produces new streams</p><p><span class="tuple"></span><span class="bolt"></span><span class="tuple"></span><span class="tuple"></span></p></section><section><h2>Bolts</h2><p>functions</p><p>filters</p><p>aggregation</p><p>joins</p><p>interactions to databases</p></section><section> <h2>What is a topology?</h2><img src="https://storm.apache.org/documentation/images/topology.png" class="stretch"/><p>a network of spouts and bolts</p></section><section><h2>Tasks</h2><img src="https://storm.apache.org/documentation/images/topology-tasks.png" class="stretch"/><p>spouts and bolts execute tasks across the clusters</p></section><section> <h2>Grouping streams</h2><p>shuffle - pick a random tasks</p><p>fields - hasing on a subset of tuple fields</p><p>global - task with lowest id</p><p>all - send to all</p></section></section><section><section><h1>Storm APIs</h1><h2>(get hands dirty)</h2></section><section><h2>Creating bolts</h2><pre><code class="no-max-height">public class MyBolt extends BaseRichBolt {
+  private OutputCollectorBase _collector;
+  
+  @Override
+  public void prepare(Map conf, TopologyContext context, OutputCollectorBase collector) {
+    _collector = collector;
+  }
+  
+  @Override
+  public void execute(Tuple input) {
+    _collector.emit(input, new Values(input.getInteger(0)));
+    _collector.ack(input);
+  }
+  
+  @Override
+  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    declarer.declare(new Fields("newField"));
+  }    
+}</code></pre></section><section><h2>Creating spouts</h2><pre><code class="stretch">public class RandomSentenceSpout extends BaseRichSpout {
+  SpoutOutputCollector _collector;
+  Random _rand;
+  
+  @Override
+  public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+    _collector = collector;
+    _rand = new Random();
+  }
+  
+  @Override
+  public void nextTuple() {
+    Utils.sleep(100);
+    String[] sentences = new String[]{ "the cow jumped over the moon", "an apple a day keeps the doctor away",
+        "four score and seven years ago", "snow white and the seven dwarfs", "i am at two with nature" };
+    String sentence = sentences[_rand.nextInt(sentences.length)];
+    _collector.emit(new Values(sentence));
+  }
+  
+  @Override
+  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    declarer.declare(new Fields("word"));
+  }
+}</code></pre></section><section><h2>Creating topologies</h2><pre><code>TopologyBuilder builder = new TopologyBuilder();
+
+builder.setSpout("sentences", new RandomSentenceSpout(), 5);
+
+builder.setBolt("split", new SplitSentence(), 8)
+        .shuffleGrouping("sentences");
+        
+builder.setBolt("count", new WordCount(), 12)
+        .fieldsGrouping("split", new Fields("word"));</code></pre></section><section><h2>Multi-language support</h2><p>JavaScript, Python, Ruby</p><pre><code>public static class SplitSentence extends ShellBolt implements IRichBolt {
+
+  public SplitSentence() {
+    super("node", "splitsentence.js");
+  }
+  
+  @Override
+  public void declareOutputFields(OutputFieldsDeclarer declarer) {
+    declarer.declare(new Fields("word"));
+  }
+}</code></pre></section></section><section><section><h1>Storm Deployment</h1></section><section><h2>Build</h2><pre><code>$ mvn package
+$ ls target
+
+storm-starter-*.jar</code></pre><p>use storm-starter</p></section><section><h2>Local/development Cluster</h2><pre><code>$ storm jar all-my-code.jar MyTopology arg1 arg2</code></pre></section><section><h2>Production Cluster</h2><pre><code>$ storm jar all-my-code.jar MyTopology topology-name remote</code></pre></section></section><section><h1>Lets see running code</h1><h2>(Word Count)</h2></section><section><h3>Resources</h3><p>https://storm.apache.org</p><p>https://github.com/apache/storm/tree/master/examples/storm-starter</p><p>stack overflow</p><h3>Slides</h3><p>https://github.com/vstirbu/storm-intro</p></section></div></div><script src="bower_components/reveal.js/lib/js/head.min.js"></script><script src="bower_components/reveal.js/js/reveal.js"></script><script src="scripts/index.js"></script></body></html>
